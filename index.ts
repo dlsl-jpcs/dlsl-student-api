@@ -1,3 +1,4 @@
+import { env } from "bun";
 
 // proxy for getting dlsl student information
 const server = Bun.serve({
@@ -31,6 +32,8 @@ const server = Bun.serve({
             status: 404
         });
     },
+
+    port: env.PORT || 3000,
 });
 
 function isValid(object: any) {
