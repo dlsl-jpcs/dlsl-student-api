@@ -1,9 +1,14 @@
 import { env } from "bun";
 
+const enableCORS = (response: Response): Response => {
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    return response;
+};
+
 // proxy for getting dlsl student information
 const server = Bun.serve({
     async fetch(request, server) {
-        console.log("Request", request.url);
         const url = new URL(request.url);
         if (url.pathname === "/api/student") {
             const id = url.searchParams.get("id");
@@ -15,12 +20,13 @@ const server = Bun.serve({
 
             const student = await getStudentInfo(id);
             if (isValid(student)) {
-                return new Response(JSON.stringify(student), {
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Access-Control-Allow-Origin": "*", // Enable CORS
-                    }
-                });
+                return enableCORS(
+                    new Response(JSON.stringify(student), {
+                        headers: {
+                            "Content-Type": "application/json",
+                        }
+                    })
+                );
             } else {
                 return new Response("Student not found", {
                     status: 404
