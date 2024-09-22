@@ -1,14 +1,22 @@
 import { env } from "bun";
 
-const enableCORS = (response: Response): Response => {
-    response.headers.set('Access-Control-Allow-Origin', '*');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    return response;
+const CORS_HEADERS = {
+    headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'OPTIONS, POST',
+        'Access-Control-Allow-Headers': 'Content-Type',
+    },
 };
 
 // proxy for getting dlsl student information
 const server = Bun.serve({
     async fetch(request, server) {
+        if (request.method === 'OPTIONS') {
+            const res = new Response('Departed', CORS_HEADERS);
+            return res;
+        }
+
+
         const url = new URL(request.url);
         if (url.pathname === "/api/student") {
             const id = url.searchParams.get("id");
@@ -20,13 +28,12 @@ const server = Bun.serve({
 
             const student = await getStudentInfo(id);
             if (isValid(student)) {
-                return enableCORS(
-                    new Response(JSON.stringify(student), {
-                        headers: {
-                            "Content-Type": "application/json",
-                        }
-                    })
-                );
+                return new Response(JSON.stringify(student), {
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...CORS_HEADERS.headers
+                    }
+                });
             } else {
                 return new Response("Student not found", {
                     status: 404
