@@ -74,6 +74,8 @@ export async function getStudentInfo(id: string): Promise<{ email_address: strin
 
     const response = await fetch(api, {
         method: "POST",
+        // THIS IS DANGEROUS !!!! who cares anyways
+        rejectUnauthorized: false,
         headers: {
             "Content-Type": "application/x-www-form-urlencoded",
         },
