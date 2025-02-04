@@ -70,7 +70,7 @@ function isValid(object: any) {
 export async function getStudentInfo(id: string): Promise<{ email_address: string, department: string }> {
 
     const regKey = Bun.env["REG_KEY"]!;
-    const api = "https://sandbox.dlsl.edu.ph/registration/event/helper.php";
+    const api = "https://portal.dlsl.edu.ph/registration/event/helper.php";
 
     const response = await fetch(api, {
         method: "POST",
