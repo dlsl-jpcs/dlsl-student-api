@@ -1,4 +1,5 @@
 import { env } from "bun";
+import { getStudentPhotoFirebase, storeStudentInfo } from "./firestore_cache";
 
 const CORS_HEADERS = {
     headers: {
@@ -30,8 +31,20 @@ const server = Bun.serve({
                 });
             }
 
+            // id is a tag (from the physical card) if it contains letters
+            // if it contains numbers only, it is a student id (we cant use this)
+            const isTag = id.match(/[a-zA-Z]/);
+
             const student = await getStudentInfo(id);
             if (isValid(student)) {
+
+                if (isTag) {
+                    // store the student info in the database
+                    // we use the tag as the id
+                    await storeStudentInfo(id, student);
+                }
+
+                storeStudentInfo(id, student);
                 return new Response(JSON.stringify(student), {
                     headers: {
                         "Content-Type": "application/json",
@@ -58,6 +71,19 @@ const server = Bun.serve({
                         "Content-Type": "text/plain",
                         ...CORS_HEADERS.headers
                     },
+                });
+            }
+
+            // first we try to get the student photo from the database
+            const studentPhoto = await getStudentPhotoFirebase(id).catch((err) => {
+                console.error("Error getting student photo", err);
+                return null;
+            });
+            if (studentPhoto) {
+                return new Response(studentPhoto, {
+                    headers: {
+                        ...CORS_HEADERS.headers
+                    }
                 });
             }
 
