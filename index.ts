@@ -22,7 +22,11 @@ const server = Bun.serve({
             const id = url.searchParams.get("id");
             if (!id) {
                 return new Response("Missing id", {
-                    status: 400
+                    status: 400,
+                    headers: {
+                        "Content-Type": "text/plain",
+                        ...CORS_HEADERS.headers
+                    },
                 });
             }
 
@@ -36,9 +40,62 @@ const server = Bun.serve({
                 });
             } else {
                 return new Response("Student not found", {
+                    status: 404,
+                    headers: {
+                        "Content-Type": "text/plain",
+                        ...CORS_HEADERS.headers
+                    },
+                });
+            }
+        }
+
+        if (url.pathname === "/api/getStudentPhoto") {
+            const id = url.searchParams.get("id");
+            if (!id) {
+                return new Response("missing student id", {
+                    status: 400,
+                    headers: {
+                        "Content-Type": "text/plain",
+                        ...CORS_HEADERS.headers
+                    },
+                });
+            }
+
+            const base64 = await getStudentPhoto(id).catch((err) => {
+                console.error("Error getting student photo", err);
+                return null;
+            });
+            if (!base64) {
+                return new Response("Student not found", {
+                    status: 404,
+                    headers: {
+                        "Content-Type": "text/plain",
+                        ...CORS_HEADERS.headers
+                    },
+                });
+            }
+
+            const image = base64.image;
+            if (!image) {
+                return new Response("Student not found", {
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...CORS_HEADERS.headers
+                    },
                     status: 404
                 });
             }
+
+            // data url
+            // data:image/png;base64,
+
+            // return
+            return new Response(image, {
+                headers: {
+                    ...CORS_HEADERS.headers
+                }
+            });
+
         }
 
         return new Response("Not found", {
@@ -46,7 +103,7 @@ const server = Bun.serve({
         });
     },
 
-    port: env.PORT || 3000,
+    port: env.PORT || 3001,
 });
 
 function isValid(object: any) {
@@ -62,6 +119,29 @@ function isValid(object: any) {
 }
 
 /**
+ * 
+ * @returns json object with the following properties:
+ *  image: base64 image string
+ */
+export async function getStudentPhoto(id: string) {
+    const api = "https://portal.dlsl.edu.ph/registration/event/helper.php";
+
+    const response = await fetch(api, {
+        rejectUnauthorized: true,
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+            action: "get_photo_id",
+            partner_id: id,
+        }),
+    });
+
+    return await response.json();
+}
+
+/**
  * Uses the DLSL tap register API to get the student's email and department
  * 
  * TODO: is this legal? :o
@@ -74,11 +154,10 @@ export async function getStudentInfo(id: string): Promise<{ email_address: strin
 
     const response = await fetch(api, {
         method: "POST",
-        // THIS IS DANGEROUS !!!! who cares anyways
-        rejectUnauthorized: false,
         headers: {
             "Content-Type": "application/x-www-form-urlencoded",
         },
+        rejectUnauthorized: true,
         body: new URLSearchParams({
             action: "registration_tapregister",
             regkey: regKey,
